@@ -1,16 +1,19 @@
 use super::error::Error;
 use std::mem;
 
+/// A struct representing a slice from which values implementing `Decode` can be read.
 pub struct Reader<'a> {
     data: &'a [u8],
     offset: usize,
 }
 
 impl<'a> Reader<'a> {
+    /// Constructs a new `Reader` with the provided data slice.
     pub fn new(data: &'a [u8]) -> Reader<'a> {
         Reader { data, offset: 0 }
     }
 
+    /// Reads bytes to a buffer.
     pub fn read_bytes(&mut self, buffer: &mut [u8]) -> Result<(), Error> {
         if self.data.len() - self.offset < buffer.len() {
             return Err(Error::Overflow);
@@ -22,6 +25,7 @@ impl<'a> Reader<'a> {
         Ok(())
     }
 
+    /// Reads a value implementing `Decode` from the data slice and advances its offset.
     pub fn read<T>(&mut self) -> Result<T, Error>
     where
         T: Decode,
@@ -29,6 +33,7 @@ impl<'a> Reader<'a> {
         T::decode(self)
     }
 
+    /// Reads a value implementing `Decode` from the data slice at a specified offset.
     pub fn read_at<T>(&self, offset: usize) -> Result<T, Error>
     where
         T: Decode,
@@ -45,16 +50,20 @@ impl<'a> Reader<'a> {
     }
 }
 
+/// A trait representing values that can be read from a `Reader`.
 pub trait Decode: Sized {
     fn decode(reader: &mut Reader) -> Result<Self, Error>;
 
+    /// Creates a temporary `Reader` and reads itself.
+    ///
+    /// Convenience method.
     fn decode_in_place(data: &[u8]) -> Result<Self, Error> {
         let mut reader = Reader::new(data);
         reader.read()
     }
 }
 
-macro_rules! impl_decode_integer {
+macro_rules! impl_decode_number {
     ($($ty:ty)*) => {
         $(impl Decode for $ty {
             fn decode(reader: &mut Reader) -> Result<$ty, Error> {
@@ -67,7 +76,7 @@ macro_rules! impl_decode_integer {
     };
 }
 
-impl_decode_integer!(i8 u8 i16 u16 i32 u32 i64 u64);
+impl_decode_number!(i8 u8 i16 u16 i32 u32 i64 u64 f32 f64);
 
 macro_rules! impl_decode_array {
     ($($length:expr)*) => {

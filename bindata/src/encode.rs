@@ -1,18 +1,24 @@
 use std::mem;
 
+/// A trait representing values that can be read from a `Reader`.
 pub struct Writer {
     data: Vec<u8>,
 }
 
 impl Writer {
+    /// Creates a new `Writer` instance with an empty buffer.
     pub fn new() -> Writer {
         Writer { data: Vec::new() }
     }
 
+    /// Writes bytes at the end of the buffer.
     pub fn write_bytes(&mut self, data: &[u8]) {
         self.data.extend_from_slice(data)
     }
 
+    /// Writes bytes at a specified offset in the buffer.
+    ///
+    /// If offset is larger than the buffers size, the empty space will be padded with zeroes.
     pub fn write_bytes_at(&mut self, data: &[u8], offset: usize) {
         while self.data.len() < data.len() + offset {
             self.data.push(0);
@@ -23,6 +29,9 @@ impl Writer {
         }
     }
 
+    /// Writes a value implementing `Encode` at a specified offset in the buffer.
+    ///
+    /// If offset is larger than the buffers size, the empty space will be padded with zeroes.
     pub fn write_at<T>(&mut self, data: T, offset: usize)
     where
         T: Encode,
@@ -33,6 +42,7 @@ impl Writer {
         self.write_bytes_at(&writer.data, offset);
     }
 
+    /// Writes a value implementing `Encode` at the end of the buffer.
     pub fn write<T>(&mut self, data: T)
     where
         T: Encode,
@@ -40,14 +50,19 @@ impl Writer {
         data.encode(self);
     }
 
+    /// Returns the final encoded data.
     pub fn data(self) -> Vec<u8> {
         self.data
     }
 }
 
+/// A trait representing values that can be written to a `Writer`.
 pub trait Encode: Sized {
     fn encode(self, writer: &mut Writer);
 
+    /// Creates a temporary `Writer`, writes itself to it and returns its data.
+    ///
+    /// Convenience method.
     fn encode_in_place(self) -> Vec<u8> {
         let mut writer = Writer::new();
         writer.write(self);
@@ -56,7 +71,7 @@ pub trait Encode: Sized {
     }
 }
 
-macro_rules! impl_encode_integer {
+macro_rules! impl_encode_number {
     ($($ty:ty)*) => {
         $(impl Encode for $ty {
             fn encode(self, writer: &mut Writer) {
@@ -66,13 +81,21 @@ macro_rules! impl_encode_integer {
     };
 }
 
-impl_encode_integer!(i8 u8 i16 u16 i32 u32 i64 u64);
+impl_encode_number!(i8 u8 i16 u16 i32 u32 i64 u64 f32 f64);
 
+/// A trait for values with a known encoded size at compile time.
+///
+/// For all types implementin this trait, the following invariant must always be true:
+/// ```
+/// let mut writer = Writer::new();
+/// writer.write(Self);
+/// assert_eq!(writer.data().len(), Self::SIZE);
+/// ```
 pub trait EncodedSize: Sized {
     const SIZE: usize;
 }
 
-macro_rules! impl_encoded_size {
+macro_rules! impl_encoded_size_number {
 	($($ty:ty)*) => {
         $(impl EncodedSize for $ty {
             const SIZE: usize = mem::size_of::<$ty>();
@@ -80,7 +103,7 @@ macro_rules! impl_encoded_size {
     };
 }
 
-impl_encoded_size!(i8 u8 i16 u16 i32 u32 i64 u64);
+impl_encoded_size_number!(i8 u8 i16 u16 i32 u32 i64 u64 f32 f64);
 
 macro_rules! impl_encode_array {
     ($($length:expr)*) => {
