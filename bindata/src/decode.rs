@@ -47,6 +47,11 @@ impl<'a> Reader<'a> {
 
 pub trait Decode: Sized {
     fn decode(reader: &mut Reader) -> Result<Self, Error>;
+
+    fn decode_in_place(data: &[u8]) -> Result<Self, Error> {
+        let mut reader = Reader::new(data);
+        reader.read()
+    }
 }
 
 macro_rules! impl_decode_integer {

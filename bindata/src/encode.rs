@@ -47,6 +47,13 @@ impl Writer {
 
 pub trait Encode: Sized {
     fn encode(self, writer: &mut Writer);
+
+    fn encode_in_place(self) -> Vec<u8> {
+        let mut writer = Writer::new();
+        writer.write(self);
+
+        writer.data()
+    }
 }
 
 macro_rules! impl_encode_integer {
