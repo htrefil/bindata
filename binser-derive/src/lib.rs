@@ -12,7 +12,7 @@ fn encode_struct(data: DataStruct) -> proc_macro2::TokenStream {
             let counter = (0..usize::MAX).map(Index::from);
 
             quote::quote! {
-                #(<#tys as ::bindata::Encode>::encode(self.#counter, writer));*
+                #(<#tys as ::binser::Encode>::encode(self.#counter, writer));*
             }
         }
         Fields::Named(fields) => {
@@ -23,7 +23,7 @@ fn encode_struct(data: DataStruct) -> proc_macro2::TokenStream {
                 .map(|field| field.ident.as_ref().unwrap());
 
             quote::quote! {
-                #(<#tys as ::bindata::Encode>::encode(self.#names, writer));*
+                #(<#tys as ::binser::Encode>::encode(self.#names, writer));*
             }
         }
         Fields::Unit => quote::quote! {},
@@ -76,8 +76,8 @@ pub fn derive_encode(input: TokenStream) -> TokenStream {
     let name = input.ident;
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     (quote::quote! {
-        impl #impl_generics ::bindata::Encode for #name #ty_generics #where_clause {
-            fn encode(self, writer: &mut ::bindata::Writer) {
+        impl #impl_generics ::binser::Encode for #name #ty_generics #where_clause {
+            fn encode(self, writer: &mut ::binser::Writer) {
                 #body
             }
         }
@@ -91,7 +91,7 @@ fn decode_struct(data: DataStruct) -> proc_macro2::TokenStream {
             let tys = fields.unnamed.iter().map(|field| &field.ty);
 
             quote::quote! {
-                Ok(Self(#(<#tys as ::bindata::Decode>::decode(reader)?),*))
+                Ok(Self(#(<#tys as ::binser::Decode>::decode(reader)?),*))
             }
         }
         Fields::Named(fields) => {
@@ -103,7 +103,7 @@ fn decode_struct(data: DataStruct) -> proc_macro2::TokenStream {
 
             quote::quote! {
                 Ok(Self {
-                    #(#names: <#tys as ::bindata::Decode>::decode(reader)?),*
+                    #(#names: <#tys as ::binser::Decode>::decode(reader)?),*
                 })
             }
         }
@@ -122,7 +122,7 @@ fn decode_enum(repr: Repr, data: DataEnum) -> proc_macro2::TokenStream {
             return Ok(Self::#names);
         })*
 
-        Err(::bindata::Error::InvalidVariant)
+        Err(::binser::Error::InvalidVariant)
     }
 }
 
@@ -145,8 +145,8 @@ pub fn derive_decode(input: TokenStream) -> TokenStream {
     let name = input.ident;
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     (quote::quote! {
-        impl #impl_generics ::bindata::Decode for #name #ty_generics #where_clause {
-            fn decode(reader: &mut ::bindata::Reader) -> Result<Self, ::bindata::Error> {
+        impl #impl_generics ::binser::Decode for #name #ty_generics #where_clause {
+            fn decode(reader: &mut ::binser::Reader) -> Result<Self, ::binser::Error> {
                 #body
             }
         }
@@ -163,12 +163,12 @@ fn encoded_size_struct(data: DataStruct) -> proc_macro2::TokenStream {
 
     let tys = fields.iter().map(|field| &field.ty);
     quote::quote! {
-        0 #(+ <#tys as ::bindata::EncodedSize>::SIZE)*
+        0 #(+ <#tys as ::binser::EncodedSize>::SIZE)*
     }
 }
 
 fn encoded_size_enum(repr: Repr) -> proc_macro2::TokenStream {
-    quote::quote! { <#repr as ::bindata::EncodedSize>::SIZE  }
+    quote::quote! { <#repr as ::binser::EncodedSize>::SIZE  }
 }
 
 #[proc_macro_derive(EncodedSize)]
@@ -190,7 +190,7 @@ pub fn derive_encoded_size(input: TokenStream) -> TokenStream {
     let name = input.ident;
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     (quote::quote! {
-        impl #impl_generics ::bindata::EncodedSize for #name #ty_generics #where_clause {
+        impl #impl_generics ::binser::EncodedSize for #name #ty_generics #where_clause {
             const SIZE: usize = #body;
         }
     })
