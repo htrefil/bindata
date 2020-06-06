@@ -62,6 +62,11 @@ impl Writer {
         &self.data
     }
 
+    /// Transfers ownership of the encoded data.
+    pub fn finish(self) -> Vec<u8> {
+        self.data
+    }
+
     /// Clears the writers internal buffer while retaining capacity to allow for more efficient memory reuse.
     pub fn clear(&mut self) {
         self.data.clear();
@@ -79,7 +84,7 @@ pub trait Encode: Sized {
         let mut writer = Writer::new();
         writer.write(self);
 
-        writer.data()
+        writer.finish()
     }
 }
 
