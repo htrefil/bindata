@@ -11,6 +11,13 @@ impl Writer {
         Writer { data: Vec::new() }
     }
 
+    /// Creates a new `Writer` instance with an empty buffer and a capacity.
+    pub fn with_capacity(capacity: usize) -> Writer {
+        Writer {
+            data: Vec::with_capacity(capacity),
+        }
+    }
+
     /// Writes bytes at the end of the buffer.
     pub fn write_bytes(&mut self, data: &[u8]) {
         self.data.extend_from_slice(data)
