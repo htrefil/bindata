@@ -1,5 +1,5 @@
 [package]
-name = "bindata-derive"
+name = "binser-derive"
 description = "Derive macros for bindata."
 license = "MIT"
 version = "0.1.0"
