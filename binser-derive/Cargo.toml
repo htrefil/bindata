@@ -1,6 +1,6 @@
 [package]
 name = "binser-derive"
-description = "Derive macros for bindata."
+description = "Derive macros for binser."
 license = "MIT"
 version = "0.1.0"
 authors = ["Jan Trefil <8711792+htrefil@users.noreply.github.com>"]
