@@ -57,9 +57,14 @@ impl Writer {
         data.encode(self);
     }
 
-    /// Returns the final encoded data.
-    pub fn data(self) -> Vec<u8> {
-        self.data
+    /// Returns the encoded data.
+    pub fn data(&self) -> &[u8] {
+        &self.data
+    }
+
+    /// Clears the writers internal buffer while retaining capacity to allow for more efficient memory reuse.
+    pub fn clear(&mut self) {
+        self.data.clear();
     }
 }
 
