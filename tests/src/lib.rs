@@ -1,9 +1,9 @@
-use bindata::{Decode, Encode, EncodedSize};
+use binser::{Decode, Encode, Size};
 
-#[derive(Encode, Decode, PartialEq, Debug, EncodedSize)]
+#[derive(Encode, Decode, PartialEq, Debug, Size)]
 struct UnnamedStruct(i8, u8, i16, u16, i32, u32, i64, u64);
 
-#[derive(Encode, Decode, PartialEq, Debug, EncodedSize)]
+#[derive(Encode, Decode, PartialEq, Debug, Size)]
 struct NamedStruct {
     a: i8,
     b: u8,
@@ -15,10 +15,10 @@ struct NamedStruct {
     h: u64,
 }
 
-#[derive(Encode, Decode, PartialEq, Debug, EncodedSize)]
+#[derive(Encode, Decode, PartialEq, Debug, Size)]
 struct UnitStruct;
 
-#[derive(Encode, Decode, Debug, PartialEq, EncodedSize)]
+#[derive(Encode, Decode, Debug, PartialEq, Size)]
 #[repr(i8)]
 enum Enum {
     First = 1,
@@ -28,7 +28,7 @@ enum Enum {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bindata::{Reader, Writer};
+    use binser::{Reader, Writer};
 
     #[test]
     fn test_size() {
