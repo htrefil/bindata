@@ -154,7 +154,7 @@ pub fn derive_decode(input: TokenStream) -> TokenStream {
     .into()
 }
 
-fn encoded_size_struct(data: DataStruct) -> proc_macro2::TokenStream {
+fn size_struct(data: DataStruct) -> proc_macro2::TokenStream {
     let fields = match data.fields {
         Fields::Unnamed(fields) => fields.unnamed,
         Fields::Named(fields) => fields.named,
@@ -163,34 +163,34 @@ fn encoded_size_struct(data: DataStruct) -> proc_macro2::TokenStream {
 
     let tys = fields.iter().map(|field| &field.ty);
     quote::quote! {
-        0 #(+ <#tys as ::binser::EncodedSize>::SIZE)*
+        0 #(+ <#tys as ::binser::Size>::SIZE)*
     }
 }
 
-fn encoded_size_enum(repr: Repr) -> proc_macro2::TokenStream {
-    quote::quote! { <#repr as ::binser::EncodedSize>::SIZE  }
+fn size_enum(repr: Repr) -> proc_macro2::TokenStream {
+    quote::quote! { <#repr as ::binser::Size>::SIZE  }
 }
 
-#[proc_macro_derive(EncodedSize)]
-pub fn derive_encoded_size(input: TokenStream) -> TokenStream {
+#[proc_macro_derive(Size)]
+pub fn derive_size(input: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(input as DeriveInput);
     let body = match input.data {
-        Data::Struct(data) => encoded_size_struct(data),
+        Data::Struct(data) => size_struct(data),
         Data::Enum(_) => {
             let repr = match Repr::parse(&input.attrs) {
                 Ok(repr) => repr,
                 Err(err) => panic!("failed to parse repr: {}", err),
             };
 
-            encoded_size_enum(repr)
+            size_enum(repr)
         }
-        Data::Union(_) => panic!("only structs and enums can #[derive(EncodedSize)]"),
+        Data::Union(_) => panic!("only structs and enums can #[derive(Size)]"),
     };
 
     let name = input.ident;
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     (quote::quote! {
-        impl #impl_generics ::binser::EncodedSize for #name #ty_generics #where_clause {
+        impl #impl_generics ::binser::Size for #name #ty_generics #where_clause {
             const SIZE: usize = #body;
         }
     })
