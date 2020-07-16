@@ -3,7 +3,21 @@ mod repr;
 use proc_macro::TokenStream;
 use repr::Repr;
 use std::usize;
-use syn::{Data, DataEnum, DataStruct, DeriveInput, Expr, Fields, Index};
+use syn::{
+    Data, DataEnum, DataStruct, DeriveInput, Expr, Fields, Generics, Index, Path, TraitBound,
+    TraitBoundModifier, TypeParamBound,
+};
+
+fn add_trait_bounds(generics: &mut Generics, path: Path) {
+    for param in generics.type_params_mut() {
+        param.bounds.push(TypeParamBound::Trait(TraitBound {
+            paren_token: None,
+            modifier: TraitBoundModifier::None,
+            lifetimes: None,
+            path: path.clone(),
+        }));
+    }
+}
 
 fn encode_struct(data: DataStruct) -> proc_macro2::TokenStream {
     match data.fields {
@@ -59,7 +73,7 @@ fn enum_discriminants(data: &DataEnum) -> impl Iterator<Item = &Expr> {
 
 #[proc_macro_derive(Encode)]
 pub fn derive_encode(input: TokenStream) -> TokenStream {
-    let input = syn::parse_macro_input!(input as DeriveInput);
+    let mut input = syn::parse_macro_input!(input as DeriveInput);
     let body = match input.data {
         Data::Struct(data) => encode_struct(data),
         Data::Enum(data) => {
@@ -73,8 +87,11 @@ pub fn derive_encode(input: TokenStream) -> TokenStream {
         Data::Union(_) => panic!("only structs and enums can #[derive(Encode)]"),
     };
 
+    add_trait_bounds(&mut input.generics, syn::parse_quote! { ::binser::Encode });
+
     let name = input.ident;
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+
     (quote::quote! {
         impl #impl_generics ::binser::Encode for #name #ty_generics #where_clause {
             fn encode(self, writer: &mut ::binser::Writer) {
@@ -128,7 +145,7 @@ fn decode_enum(repr: Repr, data: DataEnum) -> proc_macro2::TokenStream {
 
 #[proc_macro_derive(Decode)]
 pub fn derive_decode(input: TokenStream) -> TokenStream {
-    let input = syn::parse_macro_input!(input as DeriveInput);
+    let mut input = syn::parse_macro_input!(input as DeriveInput);
     let body = match input.data {
         Data::Struct(data) => decode_struct(data),
         Data::Enum(data) => {
@@ -142,8 +159,11 @@ pub fn derive_decode(input: TokenStream) -> TokenStream {
         Data::Union(_) => panic!("only structs and enums can #[derive(Encode)]"),
     };
 
+    add_trait_bounds(&mut input.generics, syn::parse_quote! { ::binser::Decode });
+
     let name = input.ident;
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+
     (quote::quote! {
         impl #impl_generics ::binser::Decode for #name #ty_generics #where_clause {
             fn decode(reader: &mut ::binser::Reader) -> Result<Self, ::binser::Error> {
@@ -173,7 +193,7 @@ fn size_enum(repr: Repr) -> proc_macro2::TokenStream {
 
 #[proc_macro_derive(Size)]
 pub fn derive_size(input: TokenStream) -> TokenStream {
-    let input = syn::parse_macro_input!(input as DeriveInput);
+    let mut input = syn::parse_macro_input!(input as DeriveInput);
     let body = match input.data {
         Data::Struct(data) => size_struct(data),
         Data::Enum(_) => {
@@ -187,8 +207,11 @@ pub fn derive_size(input: TokenStream) -> TokenStream {
         Data::Union(_) => panic!("only structs and enums can #[derive(Size)]"),
     };
 
+    add_trait_bounds(&mut input.generics, syn::parse_quote! { ::binser::Size });
+
     let name = input.ident;
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+
     (quote::quote! {
         impl #impl_generics ::binser::Size for #name #ty_generics #where_clause {
             const SIZE: usize = #body;

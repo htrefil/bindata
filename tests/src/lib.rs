@@ -25,6 +25,11 @@ enum Enum {
     Second = 2,
 }
 
+#[derive(Encode, Decode, PartialEq, Debug, Size)]
+struct Generic<T> {
+    a: T,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -45,6 +50,7 @@ mod tests {
         assert_eq!(NamedStruct::SIZE, SIZE);
         assert_eq!(UnitStruct::SIZE, 0);
         assert_eq!(Enum::SIZE, i8::SIZE);
+        assert_eq!(Generic::<u32>::SIZE, u32::SIZE);
     }
 
     #[test]
@@ -63,6 +69,7 @@ mod tests {
         });
         writer.write(UnitStruct);
         writer.write(Enum::First);
+        writer.write(Generic::<u32> { a: 0 });
 
         let data = writer.data();
         let mut reader = Reader::new(&data);
@@ -85,5 +92,6 @@ mod tests {
         );
         assert_eq!(reader.read::<UnitStruct>().unwrap(), UnitStruct);
         assert_eq!(reader.read::<Enum>().unwrap(), Enum::First);
+        assert_eq!(reader.read::<Generic<u32>>().unwrap(), Generic { a: 0 });
     }
 }
